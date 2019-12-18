@@ -10,6 +10,9 @@ djongo = "*"
 django = "==2.2.8"
 celery = "*"
 requests = "*"
+amqp = "*"
+redis = "*"
+djangorestframework = "*"
 
 [requires]
 python_version = "3.7"
