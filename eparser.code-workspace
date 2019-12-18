@@ -3,5 +3,9 @@
 		{
 			"path": "."
 		}
-	]
+    ],
+    "settings": {
+        "python.venvPath": "~/.virtualenvs",
+        "python.pythonPath": "~/.virtualenvs/eparser-VQ_tVVkb/bin/python3"
+    }
 }
