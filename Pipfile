@@ -6,13 +6,13 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-djongo = "*"
 django = "==2.2.8"
 celery = "*"
 requests = "*"
 amqp = "*"
 redis = "*"
 djangorestframework = "*"
+psycopg2-binary = "*"
 
 [requires]
 python_version = "3.7"

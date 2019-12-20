@@ -28,9 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'djongo',
     'rest_framework',
-
     'etsy_app',
 ]
 
