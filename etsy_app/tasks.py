@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import time
+import requests
 
 from django.utils import timezone
+from django.conf import settings
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from .celery import app
 
-from etsy_app.models import CeleryStat
+from etsy_app.models import CeleryStat, Listing
 
 
 task_logger = get_task_logger(__name__)
@@ -45,3 +47,38 @@ def sleep(self, n):
     stat.save()
 
     return {'result': i}
+
+
+@app.task
+@shared_task(bind=True)
+def get_listings(self):
+    """
+    https://www.etsy.com/developers/documentation/reference/listing
+    """
+
+    url_params = {'keywords': 'weaving', 'api_key': settings.ETSY_API_KEY}
+    url = f'https://openapi.etsy.com/v2/listings/active'
+
+    resp = requests.get(url, params=url_params)
+
+    data = resp.json()
+
+    for params in data['results']:
+        print(params)
+
+        if 'price' in params:
+            params['price'] = float(params['price'])
+
+
+        if 'is_supply' in params:
+            if params['is_supply'] in ['true', 'True']:
+                params['is_supply'] = True
+            elif params['is_supply'] in ['false', 'False']:
+                params['is_supply'] = False
+            else:
+                params['is_supply'] = None
+
+        obj = Listing(**params)
+        obj.save()
+
+    return {'status': resp.status_code}
