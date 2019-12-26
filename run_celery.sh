@@ -16,4 +16,4 @@
 
 export DJANGO_SETTINGS_MODULE=eparser.settings
 
-celery -A etsy_app worker --loglevel=debug
+celery -A etsy_app worker --loglevel=debug --logfile log/celery.log
