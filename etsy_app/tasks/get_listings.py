@@ -1,63 +1,19 @@
 # -*- coding: utf-8 -*-
 
-import time
 import requests
 
-from random import randint
-
-from django.utils import timezone
 from django.conf import settings
 
 from celery import shared_task
-from celery.utils.log import get_task_logger
 
-from .celery import app
+from etsy_app.celery import app
+from etsy_app.models import Listing, Offering
 
-from etsy_app.models import CeleryStat, Listing, Offering
-
-
-task_logger = get_task_logger(__name__)
-
-def logger(mess, err=False):
-    if err:
-        task_logger.error(mess)
-    else:
-        task_logger.info(mess)
-
-@app.task
-@shared_task(bind=True)
-def sleep(self, n):
-    # test task
-
-    stat = CeleryStat(
-        task_id=self.request.id,
-        oid=self.app.oid,
-        task_name=self.name,
-        task_status='STARTED',
-        limit=n-1,
-        counter=0,
-        start_datetime=timezone.now(),
-        )
-    stat.save()
-
-    for i in range(n):
-        stat.counter = i
-        stat.save()
-
-        logger(f'Current iteration: {i}')
-        time.sleep(1)
-
-    stat.task_status = 'SUCCESS'
-    stat.end_datetime = timezone.now()
-    stat.save()
-
-    return {'result': i}
+from .utils import logger, rsleep
 
 
 def get_offerigngs(listing_obj):
-    sleep_interval = randint(1, 3)
-    logger(f'Fall asleep for {sleep_interval} sec')
-    time.sleep(sleep_interval)
+    rsleep()
 
     url = f'https://openapi.etsy.com/v2/listings/{listing_obj.listing_id}/inventory'
     url_params = {'api_key': settings.ETSY_API_KEY}
@@ -122,9 +78,7 @@ def get_listings(self, keywords):
     url_params = {'keywords': keywords, 'api_key': settings.ETSY_API_KEY}
 
     while True:
-        sleep_interval = randint(1, 3)
-        logger(f'Fall asleep for {sleep_interval} sec')
-        time.sleep(sleep_interval)
+        rsleep()
 
         url_params['offset'] = offset
         resp = requests.get(url, params=url_params)
