@@ -13,6 +13,7 @@ amqp = "*"
 redis = "*"
 djangorestframework = "*"
 psycopg2-binary = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.7"
