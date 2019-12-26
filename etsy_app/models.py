@@ -86,3 +86,26 @@ class Offering(models.Model):
     price_amount = models.PositiveIntegerField(null=True, blank=True, default=None)
     price_divisor = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
     original_currency_code = models.CharField(max_length=3, null=True, blank=True, default=None)
+
+
+class Currency(models.Model):
+    """
+    https://www.cbr-xml-daily.ru/daily_json.js
+    """
+    num_code = models.SmallIntegerField(primary_key=True)
+    num_code_orig = models.CharField(max_length=3)
+    char_code = models.CharField(max_length=3)
+    name = models.TextField()
+
+
+class ExchangeRate(models.Model):
+    """
+    https://www.cbr-xml-daily.ru/daily_json.js
+    """
+    dt = models.DateTimeField(auto_now=True)
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
+    nominal = models.PositiveSmallIntegerField(default=1)
+    value = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = (('dt', 'currency'),)
