@@ -74,3 +74,15 @@ class Listing(models.Model):
     is_vintage = models.NullBooleanField()
 
     keywords = ArrayField(models.TextField(), blank=True, null=True)
+
+
+class Offering(models.Model):
+    """
+    https://www.etsy.com/developers/documentation/reference/listinginventory#method_getinventory
+    """
+    offering_id = models.BigIntegerField(primary_key=True)
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
+
+    price_amount = models.PositiveIntegerField(null=True, blank=True, default=None)
+    price_divisor = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
+    original_currency_code = models.CharField(max_length=3, null=True, blank=True, default=None)
