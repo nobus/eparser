@@ -7,7 +7,7 @@ from django.conf import settings
 from celery import shared_task
 
 from etsy_app.celery import app
-from etsy_app.models import Listing, Offering
+from etsy_app.models import Listing, Offering, Currency
 
 from .utils import logger, rsleep
 
@@ -29,37 +29,27 @@ def get_offerigngs(listing_obj):
 
         for product in products:
             for offering in product.get('offerings', []):
-                try:
-                    params = {
-                        'offering_id': offering['offering_id'],
-                        'listing': listing_obj,
-                        'price_amount': offering['price']['amount'],
-                        'price_divisor': offering['price']['divisor'],
-                        'original_currency_code': offering['price'].get('original_currency_code', None)
-                    }
-
-                    """
-                    obj, created = Offering.objects.update_or_create(
-                        offering_id=params['offering_id'], defaults=params)
-
-                    if created:
-                        logger(f'Create new offering {params["offering_id"]}')
-                    else:
-                        logger(f'Update existing offering {params["offering_id"]}')
-                    """
-
+                if 'offering_id' in offering and offering['offering_id'] and 'price' in offering:
                     try:
-                        obj = Offering.objects.get(offering_id=params['offering_id'])
+                        params = {
+                            'offering_id': offering['offering_id'],
+                            'listing': listing_obj,
+                            'price_amount': offering['price']['amount'],
+                            'price_divisor': offering['price']['divisor'],
+                            'original_currency_code': offering['price'].get('original_currency_code', None)
+                        }
 
-                        if obj.listing.listing_id != listing_obj.listing_id:
-                            logger(f'exist obj.listing_id = {obj.listing.listing_id}, new = {listing_obj.listing_id}', err=True)
-                    except Offering.DoesNotExist:
-                        obj = Offering(**params)
-                        obj.save()
+                        obj, created = Offering.objects.update_or_create(
+                            offering_id=params['offering_id'], defaults=params)
 
-                except Exception as e:
-                    logger(e, err=True)
-                    logger(params, err=True)
+                        if created:
+                            logger(f'Create new offering {params["offering_id"]}')
+                        else:
+                            logger(f'Update existing offering {params["offering_id"]}')
+
+                    except Exception as e:
+                        logger(e, exc=True)
+                        logger(params, err=True)
 
     else:
         logger(f'Status code for inventory {resp.status_code}', err=True)
@@ -103,24 +93,35 @@ def get_listings(self, keywords):
                             else:
                                 params['is_supply'] = None
 
-                        obj, created = Listing.objects.update_or_create(
-                            listing_id=params['listing_id'], defaults=params)
+                        currency = Currency.objects.filter(char_code=params.get('currency_code',))
 
-                        if obj.keywords and keywords not in obj.keywords:
-                            obj.keywords.append(keywords)
-                            obj.save()
+                        if len(currency) == 1:
+                            del params['currency_code']
+                            params['currency'] = currency[0]
+
+                            obj, created = Listing.objects.update_or_create(
+                                listing_id=params['listing_id'], defaults=params)
+
+                            if obj.keywords and keywords not in obj.keywords:
+                                obj.keywords.append(keywords)
+                                obj.save()
+                            else:
+                                obj.keywords = [keywords]
+                                obj.save()
+
+                            if created:
+                                logger(f'Create new listing {params["listing_id"]}')
+                            else:
+                                logger(f'Update existing listing {params["listing_id"]}')
+
+                            get_offerigngs(obj)
                         else:
-                            obj.keywords = [keywords]
-                            obj.save()
-
-                        if created:
-                            logger(f'Create new listing {params["listing_id"]}')
-                        else:
-                            logger(f'Update existing listing {params["listing_id"]}')
-
-                        get_offerigngs(obj)
+                            logger(
+                                f'We found strange number of currencies: {len(currency)} for listing {params["listing_id"]}',
+                                err=True
+                                )
                 except Exception as e:
-                    logger(e, err=True)
+                    logger(e, exc=True)
                     logger(params, err=True)
 
             offset = data['pagination']['next_offset']

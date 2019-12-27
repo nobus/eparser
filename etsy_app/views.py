@@ -17,7 +17,7 @@ class CeleryStatViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CeleryStatSerializer
 
 class PriceViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Listing.objects.values('listing_id', 'price', 'currency_code', 'url')
+    queryset = Listing.objects.values('listing_id', 'price', 'currency__char_code', 'url')
     serializer_class = PriceSerializer
 
     def list(self, request):
@@ -30,15 +30,20 @@ class HistogramView(View):
         maxv = int(request.GET.get('maxv', -1))
         currency = request.GET.get('currency', None)
 
-        prices = Listing.objects.values_list('price', flat=True).exclude(price__isnull=True)
+        fields = ('price', 'currency__nominal', 'currency__value',)
+        prices = Listing.objects.select_related().values(*fields)
+        prices = prices.exclude(price__isnull=True)
 
         if minv >=0 and maxv >=0:
             prices = prices.filter(price__range=[minv, maxv])
 
         if currency:
-            prices = prices.filter(currency_code=currency)
+            prices = prices.filter(currency__char_code=currency)
 
-        h = np.histogram(prices, bins=nbins)
+        h = np.histogram(
+            [(obj['currency__value'] / obj['currency__nominal']) * obj['price'] for obj in prices],
+            bins=nbins,
+            )
 
         ret = {
             'bins': h[0].tolist(),

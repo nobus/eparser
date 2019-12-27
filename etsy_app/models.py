@@ -14,12 +14,24 @@ class CeleryStat(models.Model):
     start_datetime = models.DateTimeField(auto_now=False)
     end_datetime = models.DateTimeField(auto_now=False)
 
+class Currency(models.Model):
+    """
+    https://www.cbr-xml-daily.ru/daily_json.js
+    """
+    char_code = models.CharField(max_length=3, primary_key=True)
+    name = models.TextField()
+    nominal = models.PositiveSmallIntegerField(default=1)
+    value = models.PositiveIntegerField()
+    previous = models.PositiveIntegerField()
+
+
 class Listing(models.Model):
     """
     https://www.etsy.com/developers/documentation/reference/listing#section_fields
     """
 
     listing_id = models.BigIntegerField(primary_key=True)
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
 
     state = models.CharField(max_length=16, null=True, blank=True, default=None)
     user_id = models.BigIntegerField(null=True, blank=True, default=None)
@@ -31,7 +43,6 @@ class Listing(models.Model):
     original_creation_tsz = models.FloatField(null=True, blank=True, default=None)
     last_modified_tsz = models.FloatField(null=True, blank=True, default=None)
     price = models.FloatField(null=True, blank=True, default=None)
-    currency_code = models.CharField(max_length=3, default='')
     quantity = models.PositiveIntegerField(null=True, blank=True, default=None)
     sku = ArrayField(models.CharField(max_length=2), blank=True, null=True)
     tags = ArrayField(models.TextField(), blank=True, null=True)
@@ -86,26 +97,3 @@ class Offering(models.Model):
     price_amount = models.PositiveIntegerField(null=True, blank=True, default=None)
     price_divisor = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
     original_currency_code = models.CharField(max_length=3, null=True, blank=True, default=None)
-
-
-class Currency(models.Model):
-    """
-    https://www.cbr-xml-daily.ru/daily_json.js
-    """
-    num_code = models.SmallIntegerField(primary_key=True)
-    num_code_orig = models.CharField(max_length=3)
-    char_code = models.CharField(max_length=3)
-    name = models.TextField()
-
-
-class ExchangeRate(models.Model):
-    """
-    https://www.cbr-xml-daily.ru/daily_json.js
-    """
-    dt = models.DateTimeField(auto_now=True)
-    currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
-    nominal = models.PositiveSmallIntegerField(default=1)
-    value = models.PositiveIntegerField()
-
-    class Meta:
-        unique_together = (('dt', 'currency'),)

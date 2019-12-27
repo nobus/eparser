@@ -5,7 +5,7 @@ import requests
 from celery import shared_task
 
 from etsy_app.celery import app
-from etsy_app.models import Currency, ExchangeRate
+from etsy_app.models import Currency
 
 from .utils import logger
 
@@ -23,27 +23,20 @@ def get_exchange_rate(self):
         data = resp.json()
 
         for values in data['Valute'].values():
-            num_code = int(values['NumCode'])
-
-            curr_obj, created = Currency.objects.get_or_create(
-                num_code=num_code,
+            curr_obj, created = Currency.objects.update_or_create(
+                char_code=values['CharCode'],
                 defaults={
-                    'num_code': num_code,
-                    'num_code_orig': values['NumCode'],
                     'char_code': values['CharCode'],
                     'name': values['Name'],
+                    'previous': values['Previous'],
+                    'nominal': values['Nominal'],
+                    'value': values['Value'],
                 })
 
             if created:
                 logger(f'Create new currency {values["CharCode"]}')
-
-            exch_obj = ExchangeRate(
-                currency=curr_obj,
-                nominal=values['Nominal'],
-                value=values['Value'],
-            )
-
-            exch_obj.save()
+            else:
+                logger(f'Update currency {values["CharCode"]}')
     else:
         logger(f'Status code {resp.status_code}, break!', err=True)
     
