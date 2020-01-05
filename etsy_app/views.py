@@ -25,7 +25,7 @@ class PriceViewSet(viewsets.ReadOnlyModelViewSet):
 
 class HistogramView(View):
     def get(self, request):
-        nbins = int(request.GET.get('nbins', 100))
+        nbins = int(request.GET.get('nbins', 10))
         minv = int(request.GET.get('minv', -1))
         maxv = int(request.GET.get('maxv', -1))
         currency = request.GET.get('currency', None)
@@ -45,9 +45,18 @@ class HistogramView(View):
             bins=nbins,
             )
 
+        bins = h[0].tolist()
+        edges = h[1].tolist()
+
         ret = {
-            'bins': h[0].tolist(),
-            'edges': h[1].tolist(),
+            'labels': [ [int(edges[c]), int(edges[c+1])] for c, _ in enumerate(bins) ],
+            'datasets': [
+                {
+                    'label': 'Prices',
+                    'backgroundColor': '#f87979',
+                    'data': bins,
+                }
+            ]
         }
 
         return JsonResponse(ret)
