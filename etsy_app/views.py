@@ -25,7 +25,7 @@ class PriceViewSet(viewsets.ReadOnlyModelViewSet):
 
 class HistogramView(View):
     def get(self, request):
-        nbins = int(request.GET.get('nbins', 10))
+        nbins = int(request.GET.get('nbins', 100))
         minv = int(request.GET.get('minv', -1))
         maxv = int(request.GET.get('maxv', -1))
         currency = request.GET.get('currency', None)
